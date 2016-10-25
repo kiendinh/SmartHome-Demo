@@ -1,0 +1,34 @@
+{
+  "id": "http://openinterconnect.org/schemas/oic.r.sensor.environment.json#",
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Environment Sensor",
+  "definitions": {
+    "oic.r.sensor.environment": {
+      "properties": {
+        "temperature": {
+          "type": "number",
+          "description": "ReadOnly, sensed temperature in Celcius."
+        },
+        "humidity": {
+          "type": "number",
+          "description": "ReadOnly, sensed humidity in the air."
+        },
+        "pressure": {
+          "type": "number",
+          "description": "ReadOnly, sensed pressure in the air."
+        },
+        "uvIndex": {
+          "type": "number",
+          "description": "ReadOnly, sensed UV index."
+        }
+      }
+    }
+  },
+  "type": "object",
+  "allOf": [
+    {"$ref": "oic.core.json#/definitions/oic.core"},
+    {"$ref": "oic.baseResource.json#/definitions/oic.r.baseResource"},
+    {"$ref": "#/definitions/oic.r.sensor.environment"}
+  ],
+  "required": ["temperature", "humidity", "pressure", "uvIndex"]
+}

@@ -1,0 +1,35 @@
+#%RAML 0.8
+title: OICEnvironmentalSensor
+version: v1.0-20150727
+schemas:
+  - Environment: !include oic.r.sensor.environment.json
+traits:
+  - interface:
+      queryParameters:
+        if:
+          enum: ["oic.if.s"]
+
+/EnvironmentSensorResURI:
+  description: |
+    This resource describes an environmental sensor
+    temperature (Celcius), humidity (percentage) and pressure (hPa) are float numbers,
+    while uvIndex is an integer. They represent the sensed environemental data.
+
+  displayName: Environtmental Sensor
+  is: [ interface ] # valid for all methods
+
+  get:
+    responses:
+      200:
+        body:
+          application/json:
+            schema: Environment
+            example: |
+              {
+                "rt":           "oic.r.sensor.environment",
+                "id":           "unique_example_id",
+                "temperature":  24.5,
+                "humidity": 71.2,
+                "pressure": 1180.35,
+                "uvIndex": 1
+              }

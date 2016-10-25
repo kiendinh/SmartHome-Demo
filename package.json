@@ -12,6 +12,7 @@
 	"iotivity-node": "^1.1.1-3",
 	"express": "*",
 	"websocket": "*",
-	"http": "*"
+	"http": "*",
+	"noble": "^1.6.0"
   }
 }
