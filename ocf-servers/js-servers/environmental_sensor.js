@@ -18,140 +18,154 @@ var	device = require('iotivity-node')('server'),
 	sensorData =   {temperature : 0.0,
 			humidity : 0.0,
 			pressure : 0.0,
-			uvIndex : 0};
+			uvIndex : 0},
+	simData = 0.0;
 
 var noble = '';
 try {
 	noble = require('noble');
 }
 catch(e) {
-	debuglog('Require noble module: ', e.message);
-	process.exit(0);
+	// proceed to send simulated data if no noble module's found. 
+	console.log('No noble module: ' + e.message + '. Switch to simulation mode');
+	//process.exit(0);
 }
 
-// intitialize BLE, make sure BT is enabled with 'rfkill unblock bluetooth'
-noble.on('stateChange', function(state) {
-	debuglog('on -> stateChange');
-	if (state == 'poweredOn') {
-		// only search for devices with ESS (enviromental sensing service)
-		noble.startScanning(serviceUuids, true);
-	} else {
-		noble.stopScanning();
-	}
-});
-
-noble.on('scanStart', function() {
-	debuglog('on -> scanStart');
-});
- 
-noble.on('scanStop', function() {
-	debuglog('on -> scanStop');
-});
-
-noble.on('discover', function(peripheral) {
-	debuglog('on -> discover: ' + peripheral);
-
-	if (peripheral.advertisement.localName == BLE_DEV_NAME) {
-		noble.stopScanning();
-		
-		peripheral.on('connect', function() {
-			debuglog('on -> connect');
-			this.discoverServices(serviceUuids);
-		});
-
-		peripheral.on('disconnect', function() {
-			debuglog('on -> disconnect');
+if(noble){
+	// intitialize BLE, make sure BT is enabled with 'rfkill unblock bluetooth'
+	noble.on('stateChange', function(state) {
+		debuglog('on -> stateChange');
+		if (state == 'poweredOn') {
+			// only search for devices with ESS (enviromental sensing service)
 			noble.startScanning(serviceUuids, true);
-		});
+		} else {
+			noble.stopScanning();
+		}
+	});
 
-		peripheral.connect(function(error) {
-			if (error) {
-				debuglog('Connection error');
-			}
-		});
+	noble.on('scanStart', function() {
+		debuglog('on -> scanStart');
+	});
+ 
+	noble.on('scanStop', function() {
+		debuglog('on -> scanStop');
+	});
 
-		peripheral.on('servicesDiscover', function(services) {
-			var esService = services[0];
-			debuglog('on -> ESS service discovery');
+	noble.on('discover', function(peripheral) {
+		debuglog('on -> discover: ' + peripheral);
 
-			esService.on('characteristicsDiscover', function(characteristics) {
-				var temperatureCharacteristic = null;
-				var humidityCharacteristic = null;
-				var pressureCharacteristic = null;
-				var uvIndexCharacteristic = null;
-
-				if (characteristics.length != 4) {
-					return;
-				}
-
-				for (var i = 0; i < characteristics.length; i++) {
-					if (characteristics[i].uuid == characteristicUuids[0]) {
-						temperatureCharacteristic = characteristics[i];
-					}
-					else if (characteristics[i].uuid == characteristicUuids[1]) {
-						humidityCharacteristic = characteristics[i];
-					}
-					else if (characteristics[i].uuid == characteristicUuids[2]) {
-						pressureCharacteristic = characteristics[i];
-					}
-					else if (characteristics[i].uuid == characteristicUuids[3]) {
-						uvIndexCharacteristic = characteristics[i];
-					}
-				}
-
-				if (temperatureCharacteristic) {
-					temperatureCharacteristic.on('read', function(data, isNotification) {
-						sensorData.temperature = (data.readInt8(0) + data.readInt8(1) * 256) / 100;
-						debuglog('Temperature = ', sensorData.temperature + ' celcius');
-					});
-
-					temperatureCharacteristic.notify(true, function(error) {
-						debuglog('Temperature notification ON');
-					});
-				}
-
-				if (humidityCharacteristic) {
-					humidityCharacteristic.on('read', function(data, isNotification) {
-						sensorData.humidity = (data.readUInt8(0) + data.readUInt8(1) * 256) / 100;
-						debuglog('Humidity = ', sensorData.humidity + ' %');
-					});
-
-					humidityCharacteristic.notify(true, function(error) {
-						debuglog('Humidity notification ON');
-					});
-				}
-
-				if (pressureCharacteristic) {
-					pressureCharacteristic.on('read', function(data, isNotification) {
-						sensorData.pressure = data.readUInt8(0) + data.readUInt8(1) * 256 +
-									data.readUInt8(2) * 65536;
-						sensorData.pressure /= 1000;
-						debuglog('Pressure = ', sensorData.pressure + ' hPa');
-					});
-
-					pressureCharacteristic.notify(true, function(error) {
-						debuglog('Pressure notification ON');
-					});
-				}
-
-				if (uvIndexCharacteristic) {
-					uvIndexCharacteristic.on('read', function(data, isNotification) {
-						sensorData.uvIndex = data.readUInt8(0);
-						debuglog('UV Index = ', sensorData.uvIndex);
-					});
-
-					uvIndexCharacteristic.notify(true, function(error) {
-						debuglog('UV Index notification ON');
-					});
-				}
+		if (peripheral.advertisement.localName == BLE_DEV_NAME) {
+			noble.stopScanning();
+		
+			peripheral.on('connect', function() {
+				debuglog('on -> connect');
+				this.discoverServices(serviceUuids);
 			});
+
+			peripheral.on('disconnect', function() {
+				debuglog('on -> disconnect');
+				noble.startScanning(serviceUuids, true);
+			});
+
+			peripheral.connect(function(error) {
+				if (error) {
+					debuglog('Connection error');
+				}   
+			});
+
+			peripheral.on('servicesDiscover', function(services) {
+				var esService = services[0];
+				debuglog('on -> ESS service discovery');
+
+				esService.on('characteristicsDiscover', function(characteristics) {
+					var temperatureCharacteristic = null;
+					var humidityCharacteristic = null;
+					var pressureCharacteristic = null;
+					var uvIndexCharacteristic = null;
+
+					if (characteristics.length != 4) {
+						return;
+					}
+
+					for (var i = 0; i < characteristics.length; i++) {
+						if (characteristics[i].uuid == characteristicUuids[0]) {
+							temperatureCharacteristic = characteristics[i];
+						}
+						else if (characteristics[i].uuid == characteristicUuids[1]) {
+							humidityCharacteristic = characteristics[i];
+						}
+						else if (characteristics[i].uuid == characteristicUuids[2]) {
+							pressureCharacteristic = characteristics[i];
+						}
+						else if (characteristics[i].uuid == characteristicUuids[3]) {
+							uvIndexCharacteristic = characteristics[i];
+						}
+					}
+
+					if (temperatureCharacteristic) {
+					    temperatureCharacteristic.on('read', function(data, isNotification) {
+							sensorData.temperature = (data.readInt8(0) + data.readInt8(1) * 256) / 100;
+							debuglog('Temperature = ', sensorData.temperature + ' celcius');
+						});
+
+						temperatureCharacteristic.notify(true, function(error) {
+							debuglog('Temperature notification ON');
+						});
+					}
+
+					if (humidityCharacteristic) {
+						humidityCharacteristic.on('read', function(data, isNotification) {
+							sensorData.humidity = (data.readUInt8(0) + data.readUInt8(1) * 256) / 100;
+							debuglog('Humidity = ', sensorData.humidity + ' %');
+						});
+
+						humidityCharacteristic.notify(true, function(error) {
+							debuglog('Humidity notification ON');
+						});
+					}
+
+					if (pressureCharacteristic) {
+						pressureCharacteristic.on('read', function(data, isNotification) {
+							sensorData.pressure = data.readUInt8(0) + data.readUInt8(1) * 256 +
+										data.readUInt8(2) * 65536;
+							sensorData.pressure /= 1000;
+							debuglog('Pressure = ', sensorData.pressure + ' hPa');
+						});
+
+						pressureCharacteristic.notify(true, function(error) {
+							debuglog('Pressure notification ON');
+						});
+					}
+
+					if (uvIndexCharacteristic) {
+						uvIndexCharacteristic.on('read', function(data, isNotification) {
+							sensorData.uvIndex = data.readUInt8(0);
+							debuglog('UV Index = ', sensorData.uvIndex);
+						});
+
+						uvIndexCharacteristic.notify(true, function(error) {
+							debuglog('UV Index notification ON');
+						});
+					}
+				});
 			
-			esService.discoverCharacteristics(characteristicUuids);
-		});
-	}
-});
+				esService.discoverCharacteristics(characteristicUuids);
+			});
+		}
+	});
+}
 
 function getProperties() {
+	if(!noble)
+	{
+		// Simulate real sensor behavior. This is
+		// useful for testing on desktop without noble.
+		simData = simData + 0.1;
+		sensorData.temperature = simData;
+		sensorData.humidity = simData;
+		sensorData.pressure = simData;
+		sensorData.uvIndex = simData;
+	}
 	if (resourceData.temperature != sensorData.temperature) {
 		resourceData.temperature = sensorData.temperature;
 		hasUpdate = true;
