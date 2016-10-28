@@ -19,7 +19,7 @@ var	device = require('iotivity-node')('server'),
 			humidity : 0.0,
 			pressure : 0.0,
 			uvIndex : 0},
-	simData = 0.0;
+			simData = 0.0;
 
 var noble = '';
 try {
@@ -27,7 +27,7 @@ try {
 }
 catch(e) {
 	// proceed to send simulated data if no noble module's found. 
-	console.log('No noble module: ' + e.message + '. Switch to simulation mode');
+	console.log('No noble module: ' + e.message + '. Switching to simulation mode');
 	//process.exit(0);
 }
 
